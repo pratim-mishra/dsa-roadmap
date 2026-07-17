@@ -1,3 +1,513 @@
+# DSA Interview Prep Roadmap & Cheat Sheet (Java) — For 11 YOE Engineers
+
+## How senior-level DSA rounds differ
+At 11 YOE, interviewers expect:
+- **Optimal solution fast**, with brute-force → optimized narration (they're checking your thought process, not just correctness).
+- Clean, idiomatic Java (proper naming, edge cases, no compiler errors).
+- Ability to discuss **time/space tradeoffs** and extend to follow-ups ("what if input doesn't fit in memory?").
+- DSA is usually 1-2 rounds; the rest is **system design, architecture, and leadership/behavioral**. Don't over-invest in DSA at the cost of those.
+
+---
+
+## 10-Week Roadmap
+
+| Week | Focus | Goal |
+|---|---|---|
+| 1 | Arrays, Strings, Two Pointers, Sliding Window | Pattern recognition, not memorization |
+| 2 | LinkedList, Stack, Queue, Monotonic Stack | Solve 15-20 problems |
+| 3 | Binary Search (on answer too), Recursion/Backtracking | Master search space reduction |
+| 4 | Trees: traversals, BST, height/diameter problems | Recursive tree thinking |
+| 5 | Graphs: BFS/DFS, Topological Sort, Union-Find | Model problems as graphs |
+| 6 | Heaps/Priority Queue, Trie, Intervals | Top-K, scheduling, prefix problems |
+| 7 | Dynamic Programming — 1D (Fibonacci-style, Knapsack) | Identify DP state |
+| 8 | Dynamic Programming — 2D (grids, strings, LCS family), Greedy | Transition tables |
+| 9 | System Design (HLD/LLD) + timed mock interviews | Simulate real interview |
+| 10 | Behavioral (STAR stories from your 11 yrs), company-specific patterns, revision | Polish + confidence |
+
+**Daily cadence (parallel to above):** 1-2 problems/day on LeetCode (Medium primarily, a few Hard), timed to 25-30 min each. Revisit ones you struggled with after a week.
+
+**Company-specific note:** For Amazon/Flipkart-style — heavy behavioral (Leadership Principles) + medium DSA. For Google/Meta-style — harder DSA + strong CS fundamentals. For fintech/product startups — practical DSA + system design weighted more.
+
+---
+
+## Pattern Recognition Cheat Table
+
+| If you see... | Think... |
+|---|---|
+| "Subarray/substring" + contiguous | Sliding Window |
+| Sorted array, find pair/triplet | Two Pointers |
+| "Kth largest/smallest", "top K" | Heap (PriorityQueue) |
+| Repeated overlapping subproblems | Dynamic Programming |
+| "All combinations/permutations/subsets" | Backtracking |
+| Tree/graph shortest path, level order | BFS |
+| Tree/graph explore all paths, connectivity | DFS |
+| Dependency ordering | Topological Sort |
+| Grouping/merging connected components | Union-Find (DSU) |
+| Prefix matching (autocomplete, word search) | Trie |
+| Range queries (min/max/sum over subarray) | Prefix Sum / Segment Tree |
+| Next greater/smaller element | Monotonic Stack |
+| Fixed-size search space, minimize/maximize | Binary Search on Answer |
+| Intervals overlap/merge/schedule | Sort + Sweep |
+
+---
+
+## Core Problems with Java Solutions
+
+### 1. Two Pointers — Container With Most Water
+```java
+public int maxArea(int[] height) {
+    int left = 0, right = height.length - 1, max = 0;
+    while (left < right) {
+        int area = Math.min(height[left], height[right]) * (right - left);
+        max = Math.max(max, area);
+        if (height[left] < height[right]) left++;
+        else right--;
+    }
+    return max;
+}
+// Time: O(n), Space: O(1)
+```
+
+### 2. Sliding Window — Longest Substring Without Repeating Characters
+```java
+public int lengthOfLongestSubstring(String s) {
+    int[] lastSeen = new int[128];
+    Arrays.fill(lastSeen, -1);
+    int start = 0, maxLen = 0;
+    for (int end = 0; end < s.length(); end++) {
+        char c = s.charAt(end);
+        if (lastSeen[c] >= start) start = lastSeen[c] + 1;
+        lastSeen[c] = end;
+        maxLen = Math.max(maxLen, end - start + 1);
+    }
+    return maxLen;
+}
+// Time: O(n), Space: O(128) -> O(1)
+```
+
+### 3. Monotonic Stack — Daily Temperatures
+```java
+public int[] dailyTemperatures(int[] temps) {
+    int[] result = new int[temps.length];
+    Deque<Integer> stack = new ArrayDeque<>(); // stores indices
+    for (int i = 0; i < temps.length; i++) {
+        while (!stack.isEmpty() && temps[i] > temps[stack.peek()]) {
+            int idx = stack.pop();
+            result[idx] = i - idx;
+        }
+        stack.push(i);
+    }
+    return result;
+}
+// Time: O(n), Space: O(n)
+```
+
+### 4. LinkedList — Detect and Remove Cycle
+```java
+public boolean hasCycle(ListNode head) {
+    ListNode slow = head, fast = head;
+    while (fast != null && fast.next != null) {
+        slow = slow.next;
+        fast = fast.next.next;
+        if (slow == fast) return true;
+    }
+    return false;
+}
+// Floyd's cycle detection. Time: O(n), Space: O(1)
+```
+
+### 5. LRU Cache (classic senior-level design + DSA hybrid)
+```java
+class LRUCache {
+    class Node {
+        int key, value;
+        Node prev, next;
+        Node(int k, int v) { key = k; value = v; }
+    }
+
+    private final int capacity;
+    private final Map<Integer, Node> map = new HashMap<>();
+    private final Node head = new Node(-1, -1), tail = new Node(-1, -1);
+
+    public LRUCache(int capacity) {
+        this.capacity = capacity;
+        head.next = tail;
+        tail.prev = head;
+    }
+
+    private void remove(Node n) {
+        n.prev.next = n.next;
+        n.next.prev = n.prev;
+    }
+
+    private void insertFront(Node n) {
+        n.next = head.next;
+        n.prev = head;
+        head.next.prev = n;
+        head.next = n;
+    }
+
+    public int get(int key) {
+        if (!map.containsKey(key)) return -1;
+        Node n = map.get(key);
+        remove(n);
+        insertFront(n);
+        return n.value;
+    }
+
+    public void put(int key, int value) {
+        if (map.containsKey(key)) remove(map.get(key));
+        if (map.size() == capacity) {
+            Node lru = tail.prev;
+            remove(lru);
+            map.remove(lru.key);
+        }
+        Node n = new Node(key, value);
+        insertFront(n);
+        map.put(key, n);
+    }
+}
+// get/put: O(1) using HashMap + Doubly Linked List
+```
+
+### 6. Binary Tree — Level Order Traversal (BFS)
+```java
+public List<List<Integer>> levelOrder(TreeNode root) {
+    List<List<Integer>> result = new ArrayList<>();
+    if (root == null) return result;
+    Queue<TreeNode> queue = new LinkedList<>();
+    queue.offer(root);
+    while (!queue.isEmpty()) {
+        int size = queue.size();
+        List<Integer> level = new ArrayList<>();
+        for (int i = 0; i < size; i++) {
+            TreeNode node = queue.poll();
+            level.add(node.val);
+            if (node.left != null) queue.offer(node.left);
+            if (node.right != null) queue.offer(node.right);
+        }
+        result.add(level);
+    }
+    return result;
+}
+// Time: O(n), Space: O(n)
+```
+
+### 7. Validate Binary Search Tree
+```java
+public boolean isValidBST(TreeNode root) {
+    return validate(root, null, null);
+}
+private boolean validate(TreeNode node, Long min, Long max) {
+    if (node == null) return true;
+    if ((min != null && node.val <= min) || (max != null && node.val >= max)) return false;
+    return validate(node.left, min, (long) node.val) && validate(node.right, (long) node.val, max);
+}
+// Time: O(n), Space: O(h) recursion stack
+```
+
+### 8. Graph — Number of Islands (DFS)
+```java
+public int numIslands(char[][] grid) {
+    int count = 0;
+    for (int r = 0; r < grid.length; r++) {
+        for (int c = 0; c < grid[0].length; c++) {
+            if (grid[r][c] == '1') {
+                count++;
+                dfs(grid, r, c);
+            }
+        }
+    }
+    return count;
+}
+private void dfs(char[][] grid, int r, int c) {
+    if (r < 0 || c < 0 || r >= grid.length || c >= grid[0].length || grid[r][c] != '1') return;
+    grid[r][c] = '0';
+    dfs(grid, r+1, c); dfs(grid, r-1, c);
+    dfs(grid, r, c+1); dfs(grid, r, c-1);
+}
+// Time: O(rows*cols), Space: O(rows*cols) worst case recursion
+```
+
+### 9. Topological Sort — Course Schedule
+```java
+public boolean canFinish(int numCourses, int[][] prerequisites) {
+    List<List<Integer>> graph = new ArrayList<>();
+    for (int i = 0; i < numCourses; i++) graph.add(new ArrayList<>());
+    int[] indegree = new int[numCourses];
+
+    for (int[] p : prerequisites) {
+        graph.get(p[1]).add(p[0]);
+        indegree[p[0]]++;
+    }
+
+    Queue<Integer> queue = new LinkedList<>();
+    for (int i = 0; i < numCourses; i++) if (indegree[i] == 0) queue.offer(i);
+
+    int visited = 0;
+    while (!queue.isEmpty()) {
+        int course = queue.poll();
+        visited++;
+        for (int next : graph.get(course)) {
+            if (--indegree[next] == 0) queue.offer(next);
+        }
+    }
+    return visited == numCourses;
+}
+// Kahn's algorithm. Time: O(V+E), Space: O(V+E)
+```
+
+### 10. Union-Find (DSU) template
+```java
+class DSU {
+    int[] parent, rank;
+    DSU(int n) {
+        parent = new int[n];
+        rank = new int[n];
+        for (int i = 0; i < n; i++) parent[i] = i;
+    }
+    int find(int x) {
+        if (parent[x] != x) parent[x] = find(parent[x]); // path compression
+        return parent[x];
+    }
+    void union(int x, int y) {
+        int px = find(x), py = find(y);
+        if (px == py) return;
+        if (rank[px] < rank[py]) { int t = px; px = py; py = t; }
+        parent[py] = px;
+        if (rank[px] == rank[py]) rank[px]++;
+    }
+}
+// find/union: ~O(α(n)) amortized (near constant)
+```
+
+### 11. Heap — Kth Largest Element
+```java
+public int findKthLargest(int[] nums, int k) {
+    PriorityQueue<Integer> minHeap = new PriorityQueue<>();
+    for (int num : nums) {
+        minHeap.offer(num);
+        if (minHeap.size() > k) minHeap.poll();
+    }
+    return minHeap.peek();
+}
+// Time: O(n log k), Space: O(k)
+```
+
+### 12. Trie — Implement Prefix Tree
+```java
+class Trie {
+    class TrieNode {
+        TrieNode[] children = new TrieNode[26];
+        boolean isEnd = false;
+    }
+    private final TrieNode root = new TrieNode();
+
+    public void insert(String word) {
+        TrieNode node = root;
+        for (char c : word.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) node.children[idx] = new TrieNode();
+            node = node.children[idx];
+        }
+        node.isEnd = true;
+    }
+
+    public boolean search(String word) {
+        TrieNode node = find(word);
+        return node != null && node.isEnd;
+    }
+
+    public boolean startsWith(String prefix) {
+        return find(prefix) != null;
+    }
+
+    private TrieNode find(String s) {
+        TrieNode node = root;
+        for (char c : s.toCharArray()) {
+            int idx = c - 'a';
+            if (node.children[idx] == null) return null;
+            node = node.children[idx];
+        }
+        return node;
+    }
+}
+// insert/search: O(L) where L = word length
+```
+
+### 13. Backtracking — Subsets
+```java
+public List<List<Integer>> subsets(int[] nums) {
+    List<List<Integer>> result = new ArrayList<>();
+    backtrack(nums, 0, new ArrayList<>(), result);
+    return result;
+}
+private void backtrack(int[] nums, int start, List<Integer> current, List<List<Integer>> result) {
+    result.add(new ArrayList<>(current));
+    for (int i = start; i < nums.length; i++) {
+        current.add(nums[i]);
+        backtrack(nums, i + 1, current, result);
+        current.remove(current.size() - 1);
+    }
+}
+// Time: O(2^n), Space: O(n) recursion depth
+```
+
+### 14. Dynamic Programming — 0/1 Knapsack
+```java
+public int knapsack(int[] weights, int[] values, int capacity) {
+    int n = weights.length;
+    int[][] dp = new int[n + 1][capacity + 1];
+    for (int i = 1; i <= n; i++) {
+        for (int w = 0; w <= capacity; w++) {
+            dp[i][w] = dp[i - 1][w]; // don't take item i
+            if (weights[i - 1] <= w) {
+                dp[i][w] = Math.max(dp[i][w], dp[i - 1][w - weights[i - 1]] + values[i - 1]);
+            }
+        }
+    }
+    return dp[n][capacity];
+}
+// Time: O(n * capacity), Space: O(n * capacity) — can optimize to O(capacity)
+```
+
+### 15. DP — Longest Common Subsequence
+```java
+public int longestCommonSubsequence(String text1, String text2) {
+    int m = text1.length(), n = text2.length();
+    int[][] dp = new int[m + 1][n + 1];
+    for (int i = 1; i <= m; i++) {
+        for (int j = 1; j <= n; j++) {
+            if (text1.charAt(i - 1) == text2.charAt(j - 1)) {
+                dp[i][j] = dp[i - 1][j - 1] + 1;
+            } else {
+                dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+            }
+        }
+    }
+    return dp[m][n];
+}
+// Time: O(m*n), Space: O(m*n)
+```
+
+### 16. DP — Coin Change (min coins)
+```java
+public int coinChange(int[] coins, int amount) {
+    int[] dp = new int[amount + 1];
+    Arrays.fill(dp, amount + 1);
+    dp[0] = 0;
+    for (int i = 1; i <= amount; i++) {
+        for (int coin : coins) {
+            if (coin <= i) dp[i] = Math.min(dp[i], dp[i - coin] + 1);
+        }
+    }
+    return dp[amount] > amount ? -1 : dp[amount];
+}
+// Time: O(amount * coins), Space: O(amount)
+```
+
+### 17. Greedy + Sort — Merge Intervals
+```java
+public int[][] merge(int[][] intervals) {
+    Arrays.sort(intervals, (a, b) -> a[0] - b[0]);
+    List<int[]> result = new ArrayList<>();
+    for (int[] interval : intervals) {
+        if (result.isEmpty() || result.get(result.size() - 1)[1] < interval[0]) {
+            result.add(interval);
+        } else {
+            result.get(result.size() - 1)[1] = Math.max(result.get(result.size() - 1)[1], interval[1]);
+        }
+    }
+    return result.toArray(new int[result.size()][]);
+}
+// Time: O(n log n), Space: O(n)
+```
+
+### 18. Binary Search on Answer — Minimum in Rotated Sorted Array
+```java
+public int findMin(int[] nums) {
+    int left = 0, right = nums.length - 1;
+    while (left < right) {
+        int mid = left + (right - left) / 2;
+        if (nums[mid] > nums[right]) left = mid + 1;
+        else right = mid;
+    }
+    return nums[left];
+}
+// Time: O(log n), Space: O(1)
+```
+
+### 19. Top K Frequent Elements (Heap + HashMap)
+```java
+public int[] topKFrequent(int[] nums, int k) {
+    Map<Integer, Integer> freq = new HashMap<>();
+    for (int n : nums) freq.merge(n, 1, Integer::sum);
+
+    PriorityQueue<Map.Entry<Integer, Integer>> heap =
+        new PriorityQueue<>((a, b) -> a.getValue() - b.getValue());
+
+    for (Map.Entry<Integer, Integer> entry : freq.entrySet()) {
+        heap.offer(entry);
+        if (heap.size() > k) heap.poll();
+    }
+
+    int[] result = new int[k];
+    for (int i = k - 1; i >= 0; i--) result[i] = heap.poll().getKey();
+    return result;
+}
+// Time: O(n log k), Space: O(n)
+```
+
+### 20. Word Search (Backtracking on grid)
+```java
+public boolean exist(char[][] board, String word) {
+    int rows = board.length, cols = board[0].length;
+    for (int r = 0; r < rows; r++) {
+        for (int c = 0; c < cols; c++) {
+            if (dfs(board, word, r, c, 0)) return true;
+        }
+    }
+    return false;
+}
+private boolean dfs(char[][] board, String word, int r, int c, int idx) {
+    if (idx == word.length()) return true;
+    if (r < 0 || c < 0 || r >= board.length || c >= board[0].length || board[r][c] != word.charAt(idx)) {
+        return false;
+    }
+    char temp = board[r][c];
+    board[r][c] = '#'; // mark visited
+    boolean found = dfs(board, word, r+1, c, idx+1) || dfs(board, word, r-1, c, idx+1) ||
+                     dfs(board, word, r, c+1, idx+1) || dfs(board, word, r, c-1, idx+1);
+    board[r][c] = temp; // backtrack
+    return found;
+}
+// Time: O(rows*cols*4^L), Space: O(L) recursion
+```
+
+---
+
+## Time Complexity Quick Reference
+
+| Structure/Op | Access | Search | Insert | Delete |
+|---|---|---|---|---|
+| ArrayList | O(1) | O(n) | O(n) | O(n) |
+| LinkedList | O(n) | O(n) | O(1)* | O(1)* |
+| HashMap | - | O(1) avg | O(1) avg | O(1) avg |
+| TreeMap (Red-Black) | - | O(log n) | O(log n) | O(log n) |
+| Heap (PriorityQueue) | O(1) peek | O(n) | O(log n) | O(log n) |
+| Trie | - | O(L) | O(L) | O(L) |
+
+*with reference to node
+
+---
+
+## Final Prep Checklist (last week before interviews)
+- [ ] Re-solve 5 problems per pattern from memory (no looking up).
+- [ ] Practice explaining approach out loud in under 2 minutes before coding.
+- [ ] Prepare 5-6 STAR stories from your 11 years (conflict, failure, leadership, scaling, mentoring).
+- [ ] Do 2-3 full mock interviews (DSA + system design) with a peer or platform.
+- [ ] Review this cheat sheet once, focused only on patterns you're weak in.
+
 # Extended DSA Question Bank — Detailed Explanations (Java)
 ### Matches sections: Arrays, Strings, Stacks & Queues, Trees, Heaps, Graphs
 
