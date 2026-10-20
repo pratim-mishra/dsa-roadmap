@@ -1,7 +1,7 @@
-# DSA Interview Prep Roadmap & Cheat Sheet (Java) — For 11 YOE Engineers
+# DSA Interview Prep Roadmap & Cheat Sheet (Java) — For Senior Engineers
 
 ## How senior-level DSA rounds differ
-At 11 YOE, interviewers expect:
+At senior level, interviewers expect:
 - **Optimal solution fast**, with brute-force → optimized narration (they're checking your thought process, not just correctness).
 - Clean, idiomatic Java (proper naming, edge cases, no compiler errors).
 - Ability to discuss **time/space tradeoffs** and extend to follow-ups ("what if input doesn't fit in memory?").
